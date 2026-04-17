@@ -12,8 +12,14 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
+                    <x-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')">
+                        {{ __('Suppliers') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('layups.index')" :active="request()->routeIs('layups.*')">
+                        {{ __('Layups') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('layers.index')" :active="request()->routeIs('layers.*')">
+                        {{ __('Layers') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -67,8 +73,14 @@
     <!-- Responsive Navigation Menu -->
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
+            <x-responsive-nav-link :href="route('suppliers.index')" :active="request()->routeIs('suppliers.*')">
+                {{ __('Suppliers') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('layups.index')" :active="request()->routeIs('layups.*')">
+                {{ __('Layups') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('layers.index')" :active="request()->routeIs('layers.*')">
+                {{ __('Layers') }}
             </x-responsive-nav-link>
         </div>
 

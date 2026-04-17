@@ -150,6 +150,32 @@ Include one of the following with your submission:
 
 Ensure the demo clearly showcases:
 
-- CRUD functionality
-- Import / Export feature
-- Conflict resolution behavior
+- [x] CRUD functionality
+- [x] Import / Export feature
+- [x] Conflict resolution behavior
+
+## 8. Technical Implementation (Bonus Evaluation Criteria)
+
+This project has been implemented with high-standard architecture and Laravel best practices to exceed core requirements.
+
+### Architecture & Design Patterns
+- **Service Pattern**: Business logic for data import, export, and conflict resolution is encapsulated within `ImportExportService` and model-specific services (e.g., `SupplierService`).
+- **Repository Pattern**: Data access is abstracted using Repositories (e.g., `SupplierRepository`), allowing for easier testing and future database flexibility.
+- **Service Provider Binding**: Interfaces are bound to concrete implementations in `RepositoryServiceProvider`, following the **Dependency Inversion Principle**.
+
+### Laravel Best Practices
+- **Form Request Validation**: Every POST/PUT request uses dedicated Form Requests (e.g., `SupplierRequest`, `ImportRequest`) to ensure strict data validation before processing.
+- **Policies & Authorization**: Access control is implemented via Laravel Policies (`SupplierPolicy`, etc.), ensuring secure data access.
+- **Route Model Binding**: Utilizes Laravel's implicit binding for clean, readable controller methods.
+- **Semantic HTML & Clean UI**: Built with a focus on modern aesthetics, using Tailwind CSS and Alpine.js for interactive elements.
+
+### Automated Testing
+- **Feature Tests**: Comprehensive tests for CRUD operations and the complex Import/Export flow (including conflict resolution scenarios).
+- **Unit Tests**: Granular tests for services and repository logic.
+- Run tests using: `php artisan test`
+
+### Additional Enhancements
+- **Advanced Side-by-Side Conflict Resolution**: A custom UI that mimics GitHub's merge conflict resolution, allowing users to resolve discrepancies layer-by-layer.
+- **Hierarchical Breadcrumbs**: Dynamic breadcrumb system to navigate the nested `Supplier → Layup → Layer` hierarchy effortlessly.
+- **Dashboard Analytics**: Informative dashboard showing system-wide statistics and recent activities.
+- **Interactive Visualizer**: Schematic CLT assembly visualizer on the Layup detail page.
