@@ -42,15 +42,20 @@ class ImportExportService
         $updatableLayups = [];
 
         foreach ($data['layups'] ?? [] as $index => $layupData) {
-            // Priority 1: Match by Identifier (if present)
+            // Priority 1: Match by Identifier (Global check)
             $existingLayup = null;
             if (!empty($layupData['identifier'])) {
-                $existingLayup = $supplier->layups()
-                    ->where('identifier', $layupData['identifier'])
-                    ->first();
+                // We check globally to avoid UNIQUE constraint violations
+                $existingLayup = CltLayup::where('identifier', $layupData['identifier'])->first();
+                
+                // If it belongs to a different supplier, we cannot overwrite or update it
+                if ($existingLayup && $existingLayup->supplier_id !== $supplier->id) {
+                    $existingLayup = null;
+                    $layupData['identifier_conflict'] = true; // Mark to strip identifier later
+                }
             }
 
-            // Priority 2: Fallback to Name matching (vulnerable to duplicate names, but good for legacy support)
+            // Priority 2: Fallback to Name matching (Scoped to current supplier)
             if (!$existingLayup) {
                 $existingLayup = $supplier->layups()
                     ->where('name', $layupData['name'])
@@ -163,11 +168,29 @@ class ImportExportService
             $result = ['created' => 0, 'updated' => 0, 'skipped' => 0];
             $analysis = $this->analyzeImport($supplier, $data);
 
+            // Reject strategy: abort entire import BEFORE any writes
+            if ($strategy === 'reject' && !empty($analysis['conflicts'])) {
+                $conflictDetails = collect($analysis['conflicts'])->map(function ($c) {
+                    return $c['layup_name'] . ' (' . count($c['layer_conflicts']) . ' layer conflicts)';
+                })->toArray();
+
+                return [
+                    'created' => 0,
+                    'updated' => 0,
+                    'skipped' => 0,
+                    'rejected' => true,
+                    'conflict_details' => $conflictDetails,
+                ];
+            }
+
             // Create new layups
             foreach ($analysis['new_layups'] as $layupData) {
+                // Strip identifier if it conflicts with another supplier
+                $identifier = ($layupData['identifier_conflict'] ?? false) ? null : ($layupData['identifier'] ?? null);
+
                 $layup = $supplier->layups()->create([
                     'name' => $layupData['name'],
-                    'identifier' => $layupData['identifier'] ?? null,
+                    'identifier' => $identifier,
                 ]);
                 foreach ($layupData['layers'] ?? [] as $layerData) {
                     $layup->layers()->create($layerData);
@@ -181,21 +204,6 @@ class ImportExportService
                     $item['layup']->layers()->create($layerData);
                     $result['created']++;
                 }
-            }
-
-            // Reject strategy: abort entire import if any conflicts exist
-            if ($strategy === 'reject' && !empty($analysis['conflicts'])) {
-                $conflictDetails = collect($analysis['conflicts'])->map(function ($c) {
-                    return $c['layup_name'] . ' (' . count($c['layer_conflicts']) . ' layer conflicts)';
-                })->toArray();
-
-                return [
-                    'created' => 0,
-                    'updated' => 0,
-                    'skipped' => 0,
-                    'rejected' => true,
-                    'conflict_details' => $conflictDetails,
-                ];
             }
 
             // Handle conflicts based on strategy

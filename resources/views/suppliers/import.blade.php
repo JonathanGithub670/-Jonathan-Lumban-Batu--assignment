@@ -86,8 +86,9 @@
                         </div>
                     </div>
 
-                    {{-- Potential Conflicts Alert Section (Mocked for UI visualization) --}}
+                    {{-- Potential Conflicts Alert Section --}}
                     @if(session('conflicts_detected'))
+                    </form>
                     <div style="background: #fff5f5; border: 1px solid #feb2b2; border-radius: 12px; padding: 20px; display: flex; gap: 16px; margin-bottom: 24px;">
                         <div style="color: #c53030; margin-top: 2px;">
                             <svg style="width: 24px; height: 24px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,13 +99,27 @@
                             <h4 style="font-size: 15px; font-weight: 900; color: #9b2c2c; margin: 0 0 6px 0; letter-spacing: -0.01em;">Potential Conflicts Detected</h4>
                             @php $analysis = session('import_analysis'); @endphp
                             <p style="font-size: 13px; color: #c53030; margin: 0; line-height: 1.6; font-weight: 500;">
-                                {{ count($analysis['conflicts']) }} Layups differ significantly from current suppliers in the database. 
+                                {{ count($analysis['conflicts']) }} Layups differ significantly from current suppliers in the database.
                                 <a href="{{ route('suppliers.import.review', $supplier) }}" style="color: #9b2c2c; font-weight: 900; text-decoration: underline; margin-left: 4px;">View details</a>
                             </p>
                         </div>
-                        <input type="hidden" name="confirmed" value="1">
                     </div>
-                    @endif
+
+                    {{-- Separate confirm form — no file upload needed --}}
+                    <form method="POST" action="{{ route('suppliers.import.analyze', $supplier) }}">
+                        @csrf
+                        <input type="hidden" name="confirmed" value="1">
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px;">
+                            <a href="{{ route('suppliers.show', $supplier) }}" style="padding: 12px 24px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 14px; font-weight: 700; color: #475569; text-decoration: none; text-align: center;">Cancel</a>
+                            <button type="submit" style="padding: 12px 24px; background: #064e3b; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                                <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                                Confirm Import
+                            </button>
+                        </div>
+                    </form>
+                    @else
 
                     {{-- Footer Buttons --}}
                     <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px;">
@@ -113,11 +128,12 @@
                             <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
                             </svg>
-                            {{ session('conflicts_detected') ? 'Confirm Import' : 'Analyze & Import' }}
+                            Analyze & Import
                         </button>
                     </div>
-                    
+
                 </form>
+                    @endif
             </div>
 
         </div>

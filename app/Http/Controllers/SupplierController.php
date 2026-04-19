@@ -94,6 +94,39 @@ class SupplierController extends Controller
     {
         $this->authorize('import', $supplier);
 
+        // If confirmed, use data from session instead of requiring re-upload
+        if ($request->has('confirmed')) {
+            $data = session('import_data');
+            $strategy = session('import_strategy', 'skip');
+            $dryRun = session('import_dry_run', false);
+
+            if (!$data) {
+                return redirect()->route('suppliers.import', $supplier)
+                    ->with('error', 'Import session expired. Please upload the file again.');
+            }
+
+            if ($dryRun) {
+                $analysis = $this->importExportService->analyzeImport($supplier, $data);
+                $conflictCount = collect($analysis['conflicts'])->sum(fn($c) => count($c['layer_conflicts']));
+                $newCount = collect($analysis['new_layups'])->sum(fn($l) => count($l['layers'] ?? []));
+                session()->forget(['import_analysis', 'import_data', 'import_supplier_id', 'import_strategy', 'import_dry_run']);
+                return redirect()->route('suppliers.show', $supplier)
+                    ->with('success', "[Dry Run] Simulation complete. Conflicts: {$conflictCount}, New layers: {$newCount}. No changes made.");
+            }
+
+            $result = $this->importExportService->executeImport($supplier, $data, $strategy);
+            session()->forget(['import_analysis', 'import_data', 'import_supplier_id', 'import_strategy', 'import_dry_run']);
+
+            if (!empty($result['rejected'])) {
+                $details = implode(', ', $result['conflict_details'] ?? ['Unknown conflict']);
+                return redirect()->route('suppliers.import', $supplier)
+                    ->with('error', "Import rejected due to conflicts in: {$details}");
+            }
+
+            return redirect()->route('suppliers.show', $supplier)
+                ->with('success', "Import completed. Created: {$result['created']}, Updated: {$result['updated']}, Skipped: {$result['skipped']}");
+        }
+
         try {
             $content = file_get_contents($request->file('file')->getRealPath());
             $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
@@ -136,28 +169,27 @@ class SupplierController extends Controller
             'import_dry_run' => $dryRun
         ]);
 
-        // If conflicts exist and we haven't confirmed yet, show the warning on the import page
-        if (!empty($analysis['conflicts']) && !$request->has('confirmed')) {
-            // Feature: If manual strategy is selected, go straight to the review UI for "WOW" factor
+        // If conflicts exist, show the warning on the import page
+        if (!empty($analysis['conflicts'])) {
+            // If manual strategy is selected, redirect to the review UI
             if ($strategy === 'manual') {
-                return $this->importReview($supplier);
+                return redirect()->route('suppliers.import.review', $supplier);
             }
 
             return redirect()->route('suppliers.import', $supplier)
                 ->with('conflicts_detected', true);
         }
 
-        // Execute if no conflicts OR if already confirmed
+        // Execute if no conflicts
         if ($dryRun) {
-            $conflictCount = collect($analysis['conflicts'])->sum(fn($c) => count($c['layer_conflicts']));
+            $conflictCount = 0;
             $newCount = collect($analysis['new_layups'])->sum(fn($l) => count($l['layers'] ?? []));
+            session()->forget(['import_analysis', 'import_data', 'import_supplier_id', 'import_strategy', 'import_dry_run']);
             return redirect()->route('suppliers.show', $supplier)
                 ->with('success', "[Dry Run] Simulation complete. Conflicts: {$conflictCount}, New layers: {$newCount}. No changes made.");
         }
 
         $result = $this->importExportService->executeImport($supplier, $data, $strategy);
-        
-        // Clean up session
         session()->forget(['import_analysis', 'import_data', 'import_supplier_id', 'import_strategy', 'import_dry_run']);
 
         if (!empty($result['rejected'])) {

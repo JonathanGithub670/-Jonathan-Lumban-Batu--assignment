@@ -13,6 +13,11 @@ class ImportRequest extends FormRequest
 
     public function rules(): array
     {
+        // When confirming import with session data, file is not needed
+        if ($this->has('confirmed')) {
+            return [];
+        }
+
         return [
             'file' => 'required|file|mimes:json,txt|max:10240',
         ];

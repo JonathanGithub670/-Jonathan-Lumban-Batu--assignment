@@ -26,5 +26,12 @@
                 {{ $slot }}
             </div>
         </div>
+        <script>
+            // Auto-reload page before session expires to keep CSRF token fresh
+            // Session lifetime is {{ config('session.lifetime') }} minutes
+            setTimeout(function () {
+                window.location.reload();
+            }, {{ (config('session.lifetime') - 1) * 60 * 1000 }});
+        </script>
     </body>
 </html>

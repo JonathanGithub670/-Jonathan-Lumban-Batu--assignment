@@ -109,8 +109,7 @@ class ImportExportTest extends TestCase
             ['file' => $file, 'strategy' => 'manual']
         );
 
-        $response->assertStatus(200);
-        $response->assertViewIs('suppliers.conflicts');
+        $response->assertRedirect(route('suppliers.import.review', $this->supplier));
     }
 
     public function test_import_export_service_overwrite_strategy(): void
